@@ -1,0 +1,226 @@
+<!--
+  Copyright (c) 2015 Daniel Minor
+
+  Use Leaflet to map recent bird sightings from eBird.
+
+  eBird API: https://confluence.cornell.edu/display/CLOISAPI/eBird+API+1.1
+  Leaflet API: http://leafletjs.com/reference.html
+-->
+<html>
+<head>
+  <link rel="stylesheet" href="main.css" />
+  <link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.css" />
+  <script src="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.js"></script>
+  <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
+  <script>
+    // start at Mud Lake, Ottawa, Ontario
+    var DEFAULT_LAT = 45.371507;
+    var DEFAULT_LNG = -75.794882;
+    var DEFAULT_ZOOM = 14;
+
+    var lastBirdCenter = L.latLng(DEFAULT_LAT, DEFAULT_LNG);
+    var markersLayer = new L.LayerGroup();
+    var filterSpecies = "";
+
+    function getBirdDist(map) {
+      bounds = map.getBounds();
+      return 0.45*bounds.getSouthWest().distanceTo(bounds.getNorthEast());
+    }
+
+    function plotBirds(map) {
+      markersLayer.clearLayers();
+      lastBirdCenter = map.getCenter();
+
+      var maxResults = document.getElementById("maxResults").value;
+      var daysBack = document.getElementById("daysBack").value;
+
+      if (filterSpecies) {
+        var url = "http://ebird.org/ws1.1/data/obs/geo_spp/recent?fmt=json"
+        url += "&sci=" + filterSpecies.replace(" ", "%20");
+        url += "&dist=" + String(Math.round(getBirdDist(map)/500.0));
+      } else {
+        var url = "http://ebird.org/ws1.1/data/obs/geo/recent?fmt=json"
+        url += "&dist=" + String(Math.round(getBirdDist(map)/1000.0));
+      }
+      url += "&back=" + String(daysBack);
+      url += "&maxResults=" + String(maxResults);
+      url += "&lat=" + String(lastBirdCenter.lat);
+      url += "&lng=" + String(lastBirdCenter.lng);
+      url += "&includeProvisional=true";
+
+      $("#pleasewait").show();
+      $("#birds table").remove();
+
+      $.ajax({
+        url: url
+      }).done(function(sightings){
+        sightings.sort(function(a,b) {
+          return Date.parse(a.obsDt.replace(" ", "T")) < Date.parse(b.obsDt.replace(" ", "T"));
+        });
+
+        var markerLocations = {}
+
+        var tableHTML = "<table><tbody>";
+        var currentDate = null;
+        for (i = 0; i < sightings.length; i++) {
+          var obsDate = new Date(sightings[i].obsDt.replace(" ", "T"));
+          if (currentDate === null || obsDate < currentDate) {
+            tableHTML += "<tr><th colspan=\"2\">" + obsDate.toLocaleString().replace(",", "") + "</th></tr>";
+            currentDate = obsDate;
+          }
+          var name = sightings[i].comName;
+          var lat = sightings[i].lat;
+          var lng = sightings[i].lng;
+
+          var latLng = L.latLng([lat, lng]);
+          if (latLng in markerLocations) {
+            markerLocations[latLng].push(name);
+          } else {
+            markerLocations[latLng] = [name];
+          }
+
+          tableHTML += "<tr>";
+          var howMany = sightings[i].howMany;
+          if (howMany === undefined) howMany = "";
+          tableHTML += "<td>" + howMany + "</td>"
+          tableHTML += "<td>" + sightings[i].comName + " <i>(" + sightings[i].sciName + ")</i></td>"
+          tableHTML += "<td class=\"hidden\">" + lat + "</td>"
+          tableHTML += "<td class=\"hidden\">" + lng + "</td>"
+          tableHTML += "</tr>";
+        }
+        tableHTML += "</tbody></table>";
+        $("#birds").append(tableHTML);
+
+
+        for (loc in markerLocations) {
+          latLng = loc.match(/[0-9.-]+/g);
+          var marker = L.marker(latLng);
+          markersLayer.addLayer(marker);
+
+          marker.bindPopup(markerLocations[loc].join(", "));
+          marker.on("click", function(e) {
+            e.target.openPopup();
+          });
+        }
+
+        $("#pleasewait").hide();
+      });
+    }
+
+    $(document).ready(function(){
+      // center on Mud Lake
+      var map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
+      // add an OpenStreetMap tile layer
+      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      markersLayer.addTo(map);
+
+      $("#birds").on("mouseover", "tbody tr", function(){
+        $("tr").attr("class", "");
+        $(this).attr("class", "mouseover");
+      });
+
+      $("#birds").on("click", "tbody tr", function(){
+        var lat = Number($(this).children()[2].innerHTML);
+        var lng = Number($(this).children()[3].innerHTML);
+        var latLng = L.latLng([lat, lng]);
+
+        var species = $(this).children()[1].children[0].innerHTML.replace(/[\(\)]/g, "");
+        $("#selectedSpecies")[0].value = species;
+
+        var marker = null;
+        var minDistance = Number.MAX_VALUE;
+        markersLayer.eachLayer(function(layer) {
+          var layerDistance = layer._latlng.distanceTo(latLng);
+          if (layerDistance < minDistance) {
+            minDistance = layerDistance;
+            marker = layer;
+          }
+        });
+        if (marker) {
+          marker.openPopup();
+        } else {
+          map.panTo([lat, lng]);
+        }
+      });
+
+      $("#daysBack").on("change", function(){
+        plotBirds(map);
+      });
+
+      for (var i = 1; i <= 30; ++i) {
+        if (i === 7) {
+          $("#daysBack").append("<option value=\"" + String(i) + "\" selected=\"selected\">" + String(i) + "</option>");
+        } else {
+          $("#daysBack").append("<option value=\"" + String(i) + "\">" + String(i) + "</option>");
+        }
+      }
+
+      $("#maxResults").on("change", function(){
+        plotBirds(map);
+      });
+
+      $("#useCurrentLocation").on("click", function(){
+        navigator.geolocation.getCurrentPosition(function(position) {
+          var lat = position.coords.latitude;
+          var lng = position.coords.longitude;
+          map.panTo([lat, lng]);
+          plotBirds(map);
+        });
+      });
+
+      $("#filterBySpecies").on("click", function(){
+        var btn = $("#filterBySpecies")[0];
+        var species = $("#selectedSpecies")[0]
+        if (btn.innerHTML === "Filter by species" && species.value) {
+          filterSpecies = species.value;
+          btn.innerHTML = "Clear filter";
+          plotBirds(map);
+        } else {
+          filterSpecies = "";
+          species.value = "";
+          btn.innerHTML = "Filter by species";
+          plotBirds(map);
+        }
+      });
+
+      map.on('dragend', function(e){
+        var map = e.target;
+        var distance = map.getCenter().distanceTo(lastBirdCenter);
+        if (distance > getBirdDist(map)) {
+          plotBirds(map);
+        }
+      });
+
+      plotBirds(map);
+    });
+  </script>
+</head>
+<body>
+  <div id="controls">
+    Recent Birds |
+    <label>Number of Results:</label>
+    <select id="maxResults">
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100" selected="selected">100</option>
+      <option value="200">200</option>
+      <option value="200">300</option>
+      <option value="200">400</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
+    <label>| Days back:</label>
+    <select id="daysBack">
+    </select>
+    | <button id="useCurrentLocation">Use current location</button>
+    | <input id="selectedSpecies" type="text" size=12></input>
+    <button id="filterBySpecies">Filter by species</button>
+    <em id="pleasewait">Please wait while we retrieve results...</em></div>
+  </div>
+  <div id="birds"></div>
+  <div id="map"></div>
+</body>
+</html>

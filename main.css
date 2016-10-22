@@ -1,0 +1,36 @@
+title {
+  font-size: 125%;
+  margin: 0px;
+}
+
+th {
+  text-align: center;
+  background-color: #607a9c;
+  color: #ffffff;
+}
+
+tr.mouseover {
+  background-color: #ffff55;
+}
+
+td.hidden {
+    width: 0px;
+    display: none;
+}
+
+#birds {
+  float: left;
+  width: 40%;
+  height: 95%;
+  overflow-y: auto;
+}
+
+#birds table {
+    width: 100%;
+}
+
+#map {
+  float: right;
+  width: 60%;
+  height: 95%;
+}
