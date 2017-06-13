@@ -8,6 +8,7 @@
 -->
 <html>
 <head>
+  <title>Recent Birds</title>
   <link rel="stylesheet" href="main.css" />
   <link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.css" />
   <script src="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.js"></script>
@@ -91,7 +92,6 @@
         tableHTML += "</tbody></table>";
         $("#birds").append(tableHTML);
 
-
         for (loc in markerLocations) {
           latLng = loc.match(/[0-9.-]+/g);
           var marker = L.marker(latLng);
@@ -162,6 +162,25 @@
         plotBirds(map);
       });
 
+      $("#selectedLocation").on("keyup", function(event){
+        if (event.keyCode === 13) {
+          $("#goToLocation").click();
+        }
+      });
+
+      $("#goToLocation").on("click", function(){
+        var location = $("#selectedLocation")[0]
+        $.ajax({
+          url: "http://nominatim.openstreetmap.org/search?q=" + location.value + "&format=json"
+        }).done(function(results){
+          // Feeling lucky, I guess...
+          if (results.length > 0) {
+            map.panTo([results[0].lat, results[0].lon]);
+            plotBirds(map);
+          }
+        });
+      });
+
       $("#filterBySpecies").on("click", function(){
         var btn = $("#filterBySpecies")[0];
         var species = $("#selectedSpecies")[0]
@@ -191,7 +210,6 @@
 </head>
 <body>
   <div id="controls">
-    Recent Birds |
     <label>Number of Results:</label>
     <select id="maxResults">
       <option value="25">25</option>
@@ -206,9 +224,11 @@
     <label>| Days back:</label>
     <select id="daysBack">
     </select>
-    | <input id="selectedSpecies" type="text" size=12></input>
+    | <input id="selectedLocation" type="text" size=20></input>
+    <button id="goToLocation">Go to location</button>
+    | <input id="selectedSpecies" type="text" size=20></input>
     <button id="filterBySpecies">Filter by species</button>
-    <em id="pleasewait">Please wait while we retrieve results...</em></div>
+    <em id="pleasewait">Please wait whilst we retrieve results...</em></div>
   </div>
   <div id="birds"></div>
   <div id="map"></div>
