@@ -162,15 +162,6 @@
         plotBirds(map);
       });
 
-      $("#useCurrentLocation").on("click", function(){
-        navigator.geolocation.getCurrentPosition(function(position) {
-          var lat = position.coords.latitude;
-          var lng = position.coords.longitude;
-          map.panTo([lat, lng]);
-          plotBirds(map);
-        });
-      });
-
       $("#filterBySpecies").on("click", function(){
         var btn = $("#filterBySpecies")[0];
         var species = $("#selectedSpecies")[0]
@@ -215,7 +206,6 @@
     <label>| Days back:</label>
     <select id="daysBack">
     </select>
-    | <button id="useCurrentLocation">Use current location</button>
     | <input id="selectedSpecies" type="text" size=12></input>
     <button id="filterBySpecies">Filter by species</button>
     <em id="pleasewait">Please wait while we retrieve results...</em></div>
