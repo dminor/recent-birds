@@ -22,7 +22,7 @@ HTTPS contexts I switched to using the
 well for quite a while, but eventually the eBird API I was using
 was deprecated and stopped working.
 
-The new version of the API requires using a API token which
+The new version of the eBird API requires using a API token which
 really should be kept secret. It would be easy enough to write a
 Flask app to wrap the API queries, update to the new version of
 the eBird API and the latest version of leaflet, host it somewhere
