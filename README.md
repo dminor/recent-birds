@@ -13,7 +13,7 @@ seemed slower and clunkier than what was possible using
 [eBird API](https://confluence.cornell.edu/display/CLOISAPI/eBird+API+1.1) was very straightforward and the whole thing came
 together in an afternoon.
 
-<img src="screenshot.png" width="250">
+<img src="screenshot.png" width="800">
 
 I later added the ability to jump to a location using the
 [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation) and when that was restricted to
