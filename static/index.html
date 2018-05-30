@@ -21,6 +21,7 @@
 
     var lastBirdCenter = L.latLng(DEFAULT_LAT, DEFAULT_LNG);
     var markersLayer = new L.LayerGroup();
+    var filterEnabled = false;
     var filterSpecies = "";
 
     function getBirdDist(map) {
@@ -35,19 +36,16 @@
       var maxResults = document.getElementById("maxResults").value;
       var daysBack = document.getElementById("daysBack").value;
 
-      if (filterSpecies) {
-        var url = "http://ebird.org/ws1.1/data/obs/geo_spp/recent?fmt=json"
-        url += "&sci=" + filterSpecies.replace(" ", "%20");
-        url += "&dist=" + String(Math.round(getBirdDist(map)/500.0));
-      } else {
-        var url = "http://ebird.org/ws1.1/data/obs/geo/recent?fmt=json"
-        url += "&dist=" + String(Math.round(getBirdDist(map)/1000.0));
+      url = "/observations";
+      url += "/" + String(lastBirdCenter.lat);
+      url += "/" + String(lastBirdCenter.lng);
+      url += "/" + String(Math.round(getBirdDist(map)/1000.0));
+      url += "/" + String(daysBack);
+      url += "/" + String(maxResults);
+
+      if (filterEnabled && filterSpecies) {
+        url += "/" + filterSpecies
       }
-      url += "&back=" + String(daysBack);
-      url += "&maxResults=" + String(maxResults);
-      url += "&lat=" + String(lastBirdCenter.lat);
-      url += "&lng=" + String(lastBirdCenter.lng);
-      url += "&includeProvisional=true";
 
       $("#pleasewait").show();
       $("#birds table").remove();
@@ -87,6 +85,7 @@
           tableHTML += "<td>" + sightings[i].comName + " <i>(" + sightings[i].sciName + ")</i></td>"
           tableHTML += "<td class=\"hidden\">" + lat + "</td>"
           tableHTML += "<td class=\"hidden\">" + lng + "</td>"
+          tableHTML += "<td class=\"hidden\">" + sightings[i].speciesCode + "</td>"
           tableHTML += "</tr>";
         }
         tableHTML += "</tbody></table>";
@@ -126,9 +125,7 @@
         var lat = Number($(this).children()[2].innerHTML);
         var lng = Number($(this).children()[3].innerHTML);
         var latLng = L.latLng([lat, lng]);
-
-        var species = $(this).children()[1].children[0].innerHTML.replace(/[\(\)]/g, "");
-        $("#selectedSpecies")[0].value = species;
+        filterSpecies = $(this).children()[4].innerHTML;
 
         var marker = null;
         var minDistance = Number.MAX_VALUE;
@@ -171,7 +168,7 @@
       $("#goToLocation").on("click", function(){
         var location = $("#selectedLocation")[0]
         $.ajax({
-          url: "http://nominatim.openstreetmap.org/search?q=" + location.value + "&format=json"
+          url: "/location/" + location.value
         }).done(function(results){
           // Feeling lucky, I guess...
           if (results.length > 0) {
@@ -183,14 +180,12 @@
 
       $("#filterBySpecies").on("click", function(){
         var btn = $("#filterBySpecies")[0];
-        var species = $("#selectedSpecies")[0]
-        if (btn.innerHTML === "Filter by species" && species.value) {
-          filterSpecies = species.value;
+        if (btn.innerHTML === "Filter by species" && filterSpecies) {
+          filterEnabled = true;
           btn.innerHTML = "Clear filter";
           plotBirds(map);
         } else {
-          filterSpecies = "";
-          species.value = "";
+          filterEnabled = false;
           btn.innerHTML = "Filter by species";
           plotBirds(map);
         }
@@ -226,8 +221,7 @@
     </select>
     | <input id="selectedLocation" type="text" size=20></input>
     <button id="goToLocation">Go to location</button>
-    | <input id="selectedSpecies" type="text" size=20></input>
-    <button id="filterBySpecies">Filter by species</button>
+    | <button id="filterBySpecies">Filter by species</button>
     <em id="pleasewait">Please wait whilst we retrieve results...</em></div>
   </div>
   <div id="birds"></div>
