@@ -4,7 +4,7 @@
   Use Leaflet to map recent bird sightings from eBird.
 
   eBird API: https://confluence.cornell.edu/display/CLOISAPI/eBird+API+1.1
-  Leaflet API: http://leafletjs.com/reference.html
+  Leaflet API: https://leafletjs.com/reference.html
 -->
 <html>
 <head>
@@ -110,8 +110,8 @@
       // center on Mud Lake
       var map = L.map('map').setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
       // add an OpenStreetMap tile layer
-      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+      L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
 
       markersLayer.addTo(map);
