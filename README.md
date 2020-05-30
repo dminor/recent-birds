@@ -21,7 +21,7 @@ https contexts I switched to using the
 [nominatim](https://nominatim.openstreetmap.org/) API. This worked
 well for quite some time. Eventually the eBird API I was using
 was deprecated in favour of one requiring an API token. Initially, I decided
-to not update and just make due with the tools avaiable on eBird. For instance,
+to not update and just make due with the tools available on eBird. For instance,
 eBird has an alerts feature that will let you know if a bird you haven't seen
 yet that year has been spotted in the area. This actually ends up being pretty
 depressing when you receive an alert email at work and realize there's no chance
